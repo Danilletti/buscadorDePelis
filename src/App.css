@@ -35,6 +35,10 @@ form {
   text-align: center;
 }
 
+.movie {
+  text-align: center;
+}
+
 .movie h3,
 .movie p {
   margin: 0;

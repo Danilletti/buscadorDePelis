@@ -1,14 +1,22 @@
 import './App.css'
 import { useMovies } from './hooks/useMovies'
 import { Movies } from './components/Movies'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import debounce from "just-debounce-it"
 
 
 function useSearch() {
   const [search, setSearch] = useState('')
   const [error, setError] = useState(null)
+  const isFirstInput = useRef(true)
 
   useEffect(() => {
+
+    if (isFirstInput.current) {
+      isFirstInput.current = search === ''
+      return
+    }
+
     if (search === '') {
       setError('No se puede buscar una pelicula vacia')
       return
@@ -31,15 +39,29 @@ function useSearch() {
 }
 
 function App() {
-  const { movies } = useMovies()
+  const [sort, setSort] = useState(false)
   const { search, setSearch, error } = useSearch()
+  const { movies, getMovies, loanding } = useMovies({ search, sort })
+
+  const debouncedGetMovies = useCallback(
+    debounce(search => {
+      console.log('search', search)
+      getMovies({ search })
+    }, 300)
+    , [getMovies]
+  )
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    console.log({ search })
+    getMovies({ search })
   }
   const handleChange = (event) => {
-    setSearch(event.target.value)
+    const newSearch = event.target.value
+    setSearch(newSearch)
+    debouncedGetMovies(newSearch)
+  }
+  const handleSort = () => {
+    setSort(!sort)
   }
 
 
@@ -54,13 +76,16 @@ function App() {
               borderColor: error ? 'red' : 'transparent'
             }} onChange={handleChange} value={search} name='query' placeholder='Avengers, Star Wars, The Matrix...'
           />
+          <input type="checkbox" onChange={handleSort} checked={sort} />
           <button type='submit'>Buscar</button>
         </form>
         {error && <p style={{ color: 'red' }}>{error}</p>}
       </header>
 
       <main>
-        <Movies movies={movies} />
+        {
+          loanding ? <p>Carganding</p> : <Movies movies={movies} />
+        }
       </main>
     </div>
 
